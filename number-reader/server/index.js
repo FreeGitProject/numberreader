@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const Tesseract = require('tesseract.js');
+const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
@@ -37,19 +38,35 @@ app.use(express.json());
 app.post('/upload', upload.single('image'), (req, res) => {
   const { path: imagePath } = req.file;
 
-  Tesseract.recognize(imagePath, 'eng')
-    .then(({ data: { text } }) => {
-      const extractedNumber = text.match(/\d+/g)?.[0] || 'No number found';
+  // Preprocess the image
+  const processedImagePath = `./uploads/processed-${Date.now()}.png`;
 
-      const newImage = new Image({
-        imageUrl: imagePath,
-        extractedNumber,
-      });
+  sharp(imagePath)
+    .grayscale()
+    .normalize()
+    .toFile(processedImagePath)
+    .then(() => {
+      Tesseract.recognize(processedImagePath, 'eng')
+        .then(({ data: { text } }) => {
+          console.log('Raw OCR Output:', text); // Log the raw text
 
-      newImage.save()
-        .then(() => {
-          fs.unlinkSync(imagePath);  // Clean up the uploaded image
-          res.json({ extractedNumber });
+          // Extract only numbers
+          const extractedNumber = text.replace(/\D/g, '');
+
+          console.log('Extracted Number:', extractedNumber); // Log the extracted number
+
+          const newImage = new Image({
+            imageUrl: processedImagePath,
+            extractedNumber,
+          });
+
+          newImage.save()
+            .then(() => {
+              fs.unlinkSync(imagePath);  // Clean up the uploaded image
+              fs.unlinkSync(processedImagePath);  // Clean up the processed image
+              res.json({ extractedNumber });
+            })
+            .catch(err => res.status(500).json({ error: err.message }));
         })
         .catch(err => res.status(500).json({ error: err.message }));
     })
