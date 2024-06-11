@@ -83,7 +83,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
               extractedNumber: extractedNumber.toString(),
               imageNo,
               differenceExtractedNumber,
-              previousExtractedNumber : oldextractedNumber.toString(),
+              previousExtractedNumber : oldextractedNumber?.toString(),
             });
 
             newImage.save()
