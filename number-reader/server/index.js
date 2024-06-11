@@ -5,13 +5,16 @@ const Tesseract = require('tesseract.js');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
+const cors = require('cors'); // Import the cors package
 
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+
 const app = express();
 const port = process.env.PORT || 5000;
-// Log the MongoDB URI to verify it's being read correctly
-//console.log('MongoDB URI:', process.env.MONGO_URI); 
 
+app.use(cors()); // Enable CORS for all routes
+
+// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -19,17 +22,19 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
 
+// Mongoose Schema and Model
 const imageSchema = new mongoose.Schema({
   imageUrl: String,
   extractedNumber: String,
   previousExtractedNumber: String,
   createdAt: { type: Date, default: Date.now },
   imageNo: Number,
-  differenceExtractedNumber:Number,
+  differenceExtractedNumber: Number,
 });
 
 const Image = mongoose.model('Image', imageSchema);
 
+// Multer Storage Configuration
 const storage = multer.diskStorage({
   destination: './uploads/',
   filename: (req, file, cb) => {
@@ -41,19 +46,14 @@ const upload = multer({ storage });
 
 app.use(express.json());
 
+// Image Upload and Processing Route
 app.post('/upload', upload.single('image'), async (req, res) => {
   const { path: imagePath } = req.file;
-
-  // Preprocess the image
   const processedImagePath = `./uploads/processed-${Date.now()}.png`;
 
   try {
-    // Calculate imageNo
-    //const count = await Image.countDocuments({}, { timeout: 30000 });
     const count = await Image.countDocuments();
     const imageNo = count + 1;
-
-    // Find previous image
     const previousImage = await Image.findOne({}, {}, { sort: { 'createdAt': -1 } });
 
     sharp(imagePath)
@@ -63,19 +63,18 @@ app.post('/upload', upload.single('image'), async (req, res) => {
       .then(() => {
         Tesseract.recognize(processedImagePath, 'eng')
           .then(({ data: { text } }) => {
-            console.log('Raw OCR Output:', text); // Log the raw text
+            console.log('Raw OCR Output:', text);
 
-            // Extract only numbers
             const extractedNumber = parseInt(text.replace(/\D/g, ''), 10);
-
-            console.log('Extracted Number:', extractedNumber); // Log the extracted number
+            console.log('Extracted Number:', extractedNumber);
 
             let differenceExtractedNumber = null;
-            let oldextractedNumber = null;
+            let oldExtractedNumber = null;
+
             if (previousImage) {
               const previousExtractedNumber = parseInt(previousImage.extractedNumber, 10);
               differenceExtractedNumber = extractedNumber - previousExtractedNumber;
-               oldextractedNumber = previousExtractedNumber;
+              oldExtractedNumber = previousExtractedNumber;
             }
 
             const newImage = new Image({
@@ -83,14 +82,14 @@ app.post('/upload', upload.single('image'), async (req, res) => {
               extractedNumber: extractedNumber.toString(),
               imageNo,
               differenceExtractedNumber,
-              previousExtractedNumber : oldextractedNumber?.toString(),
+              previousExtractedNumber: oldExtractedNumber?.toString(),
             });
 
             newImage.save()
               .then(() => {
-                fs.unlinkSync(imagePath);  // Clean up the uploaded image
-                fs.unlinkSync(processedImagePath);  // Clean up the processed image
-                res.json({ extractedNumber, imageNo, differenceExtractedNumber,oldextractedNumber });
+                fs.unlinkSync(imagePath);
+                fs.unlinkSync(processedImagePath);
+                res.json({ extractedNumber, imageNo, differenceExtractedNumber, oldExtractedNumber });
               })
               .catch(err => res.status(500).json({ error: err.message }));
           })
@@ -99,6 +98,16 @@ app.post('/upload', upload.single('image'), async (req, res) => {
       .catch(err => res.status(500).json({ error: err.message }));
   } catch (err) {
     console.error('Error during image processing:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add this new route to fetch all images
+app.get('/images', async (req, res) => {
+  try {
+    const images = await Image.find();
+    res.json(images);
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

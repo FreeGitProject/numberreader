@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import './App.css';
+import ImagesList from './components/ImagesList.jsx';
 
 const App = () => {
   const [image, setImage] = useState(null);
@@ -29,6 +30,10 @@ const App = () => {
       <input type="file" onChange={handleImageChange} />
       <button onClick={handleUpload}>Upload</button>
       {extractedNumber && <h2>Extracted Number: {extractedNumber}</h2>}
+      <div>
+      <h1>Number Reader Application</h1>
+      <ImagesList />
+    </div>
     </div>
   );
 };
