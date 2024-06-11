@@ -27,7 +27,9 @@ const ImagesList = () => {
 
     fetchImages();
   }, []);
-
+  const defaultColDef = {
+    flex: 1,
+  };
   return (
     <div className="ag-theme-alpine" style={{ height: '400px', width: '100%' }}>
       <AgGridReact
