@@ -20,6 +20,8 @@ mongoose.connect(process.env.MONGO_URI, {
 const imageSchema = new mongoose.Schema({
   imageUrl: String,
   extractedNumber: String,
+  createdAt: { type: Date, default: Date.now },
+  imageNo: Number,
 });
 
 const Image = mongoose.model('Image', imageSchema);
@@ -35,7 +37,7 @@ const upload = multer({ storage });
 
 app.use(express.json());
 
-app.post('/upload', upload.single('image'), (req, res) => {
+app.post('/upload', upload.single('image'), async (req, res) => {
   const { path: imagePath } = req.file;
 
   // Preprocess the image
@@ -47,7 +49,7 @@ app.post('/upload', upload.single('image'), (req, res) => {
     .toFile(processedImagePath)
     .then(() => {
       Tesseract.recognize(processedImagePath, 'eng')
-        .then(({ data: { text } }) => {
+        .then( async  ({ data: { text } }) => {
           console.log('Raw OCR Output:', text); // Log the raw text
 
           // Extract only numbers
@@ -55,16 +57,21 @@ app.post('/upload', upload.single('image'), (req, res) => {
 
           console.log('Extracted Number:', extractedNumber); // Log the extracted number
 
+           // Calculate imageNo
+           const count = await Image.countDocuments();
+           const imageNo = count + 1; 
+
           const newImage = new Image({
             imageUrl: processedImagePath,
             extractedNumber,
+            imageNo,
           });
 
           newImage.save()
             .then(() => {
               fs.unlinkSync(imagePath);  // Clean up the uploaded image
               fs.unlinkSync(processedImagePath);  // Clean up the processed image
-              res.json({ extractedNumber });
+              res.json({ extractedNumber ,imageNo });
             })
             .catch(err => res.status(500).json({ error: err.message }));
         })
