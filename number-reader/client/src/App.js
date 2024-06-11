@@ -35,7 +35,7 @@ const App = () => {
       </div>
       <div>
         <h2>Capture Image</h2>
-        <CameraCapture onUpload={setExtractedNumber} />
+        <CameraCapture />
       </div>
       {extractedNumber && <h2>Extracted Number: {extractedNumber}</h2>}
       <div>
