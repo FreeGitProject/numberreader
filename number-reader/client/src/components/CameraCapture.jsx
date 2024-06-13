@@ -1,219 +1,29 @@
-// import React, { useState, useRef } from 'react';
-// import axios from 'axios';
-// import ReactCrop from 'react-image-crop';
-// import 'react-image-crop/dist/ReactCrop.css';
-
-// const CameraCapture = () => {
-//   const [src, setSrc] = useState(null);
-//   const [crop, setCrop] = useState({ aspect: 16 / 9 });
-//   const imgRef = useRef(null);
-
-//   const captureImage = async () => {
-//     try {
-//       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-//       const videoTrack = stream.getVideoTracks()[0];
-//       const imageCapture = new ImageCapture(videoTrack);
-//       const blob = await imageCapture.takePhoto();
-//       const imageUrl = URL.createObjectURL(blob);
-//       setSrc(imageUrl);
-//     } catch (error) {
-//       console.error('Error capturing image:', error);
-//     }
-//   };
-
-//   const onCropComplete = crop => {
-//     makeClientCrop(crop);
-//   };
-
-//   const makeClientCrop = async crop => {
-//     if (imgRef.current && crop.width && crop.height) {
-//       const croppedImageUrl = await getCroppedImg(imgRef.current, crop, 'newFile.jpeg');
-//       setSrc(croppedImageUrl);
-//     }
-//   };
-
-//   const getCroppedImg = (image, crop, fileName) => {
-//     const canvas = document.createElement('canvas');
-//     const scaleX = image.naturalWidth / image.width;
-//     const scaleY = image.naturalHeight / image.height;
-//     canvas.width = crop.width;
-//     canvas.height = crop.height;
-//     const ctx = canvas.getContext('2d');
-
-//     ctx.drawImage(
-//       image,
-//       crop.x * scaleX,
-//       crop.y * scaleY,
-//       crop.width * scaleX,
-//       crop.height * scaleY,
-//       0,
-//       0,
-//       crop.width,
-//       crop.height
-//     );
-
-//     return new Promise((resolve, reject) => {
-//       canvas.toBlob(blob => {
-//         if (!blob) {
-//           console.error('Canvas is empty');
-//           return;
-//         }
-//         blob.name = fileName;
-//         window.URL.revokeObjectURL(src);
-//         const imageUrl = window.URL.createObjectURL(blob);
-//         resolve(imageUrl);
-//       }, 'image/jpeg');
-//     });
-//   };
-
-//   const uploadImage = async () => {
-//     if (!src) return;
-
-//     const formData = new FormData();
-//     formData.append('image', src);
-
-//     try {
-//       await axios.post('http://localhost:5000/upload', formData, {
-//         headers: {
-//           'Content-Type': 'multipart/form-data'
-//         }
-//       });
-//       console.log('Image uploaded successfully');
-//     } catch (error) {
-//       console.error('Error uploading image:', error);
-//     }
-//   };
-
-//   return (
-//     <div>
-//       <button onClick={captureImage}>Capture Image</button>
-//       {src && (
-//         <div>
-//           <ReactCrop
-//             src={src}
-//             crop={crop}
-//             onChange={newCrop => setCrop(newCrop)}
-//             onComplete={onCropComplete}
-//           />
-//           <button onClick={uploadImage}>Upload Image</button>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default CameraCapture;
-// src/components/CameraCapture.jsx
-// import React, { useState, useRef } from 'react';
-// import Webcam from 'react-webcam';
-// import ReactCrop from 'react-image-crop';
-// import 'react-image-crop/dist/ReactCrop.css';
-// import axios from 'axios';
-
-// const CameraCapture = () => {
-//   const webcamRef = useRef(null);
-//   const [imgSrc, setImgSrc] = useState(null);
-//   const [crop, setCrop] = useState({ aspect: 1 });
-//   const [croppedImage, setCroppedImage] = useState(null);
-
-//   const capture = () => {
-//     const imageSrc = webcamRef.current.getScreenshot();
-//     setImgSrc(imageSrc);
-//   };
-
-//   const onCropComplete = (crop) => {
-//     if (imgSrc && crop.width && crop.height) {
-//       const canvas = document.createElement('canvas');
-//       const image = new Image();
-//       image.src = imgSrc;
-//       const scaleX = image.naturalWidth / image.width;
-//       const scaleY = image.naturalHeight / image.height;
-//       canvas.width = crop.width;
-//       canvas.height = crop.height;
-//       const ctx = canvas.getContext('2d');
-//       ctx.drawImage(
-//         image,
-//         crop.x * scaleX,
-//         crop.y * scaleY,
-//         crop.width * scaleX,
-//         crop.height * scaleY,
-//         0,
-//         0,
-//         crop.width,
-//         crop.height
-//       );
-//       canvas.toBlob(blob => {
-//         setCroppedImage(blob);
-//       }, 'image/jpeg');
-//     }
-//   };
-
-//   const handleUpload = () => {
-//     if (croppedImage) {
-//       const formData = new FormData();
-//       formData.append('image', croppedImage, 'captured_image.jpg');
-
-//       axios.post('http://localhost:5000/upload', formData)
-//         .then(res => {
-//           console.log('Upload successful', res.data);
-//         })
-//         .catch(err => {
-//           console.error(err);
-//         });
-//     }
-//   };
-
-//   return (
-//     <div>
-//       <Webcam
-//         audio={false}
-//         ref={webcamRef}
-//         screenshotFormat="image/jpeg"
-//         width="30%"
-//         height="30%"
-//       />
-//       <button onClick={capture}>Capture</button>
-//       {imgSrc && (
-//         <>
-//           <ReactCrop
-//             src={imgSrc}
-//             crop={crop}
-//             onChange={newCrop => setCrop(newCrop)}
-//             onComplete={onCropComplete}
-//           />
-//           <button onClick={handleUpload}>Upload Cropped Image</button>
-//         </>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default CameraCapture;
 import React, { useState, useRef, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import ReactCrop from 'react-image-crop';
+import ReactCrop, {
+  centerCrop,
+  makeAspectCrop,
+  Crop,
+  PixelCrop,
+  convertToPixelCrop,
+} from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css';
 import axios from 'axios';
 
 const CameraCapture = () => {
   const webcamRef = useRef(null);
   const [imgSrc, setImgSrc] = useState(null);
-  const [crop, setCrop] = useState({ aspect: 1 });
+  const [crop, setCrop] = useState({ aspect: 16 / 9 });
   const [completedCrop, setCompletedCrop] = useState(null);
   const [croppedImage, setCroppedImage] = useState(null);
+  const [croppedImageUrl, setCroppedImageUrl] = useState(null);
+  const [isCameraOn, setIsCameraOn] = useState(false);
 
   const capture = () => {
     const imageSrc = webcamRef.current.getScreenshot();
     setImgSrc(imageSrc);
-  };
-
-  const createImage = (url) => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.addEventListener('load', () => resolve(img));
-      img.addEventListener('error', (err) => reject(err));
-      img.src = url;
-    });
+    setIsCameraOn(false); // Turn off the camera after capturing
+    console.log("Captured Image Source:", imageSrc); // Debug log
   };
 
   const onCropComplete = async (crop) => {
@@ -238,21 +48,26 @@ const CameraCapture = () => {
       );
       canvas.toBlob(blob => {
         setCroppedImage(blob);
+        const croppedUrl = URL.createObjectURL(blob);
+        setCroppedImageUrl(croppedUrl);
+        console.log("Cropped Image URL:", croppedUrl); // Debug log
       }, 'image/jpeg');
     }
   };
 
-  useEffect(() => {
-    if (completedCrop) {
-      onCropComplete(completedCrop);
-    }
-  }, [completedCrop]);
+  const createImage = (url) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.addEventListener('load', () => resolve(img));
+      img.addEventListener('error', (err) => reject(err));
+      img.src = url;
+    });
+  };
 
   const handleUpload = () => {
     if (croppedImage) {
       const formData = new FormData();
       formData.append('image', croppedImage, 'captured_image.jpg');
-
       axios.post('http://localhost:5000/upload', formData)
         .then(res => {
           console.log('Upload successful', res.data);
@@ -263,26 +78,66 @@ const CameraCapture = () => {
     }
   };
 
+  const toggleCamera = () => {
+    setIsCameraOn(!isCameraOn);
+  };
+
+  useEffect(() => {
+    console.log('Crop state:', crop);
+  }, [crop]);
+
   return (
     <div>
-      <Webcam
-        audio={false}
-        ref={webcamRef}
-        screenshotFormat="image/jpeg"
-        style={{ width: '10%', height: 'auto' }}
-      />
-      <button onClick={capture}>Capture</button>
-      {imgSrc && (
-        <>
-          <ReactCrop
-            src={imgSrc}
-            crop={crop}
-            onChange={newCrop => setCrop(newCrop)}
-            onComplete={newCrop => setCompletedCrop(newCrop)}
-          />
-          <button onClick={handleUpload}>Upload Cropped Image</button>
-        </>
-      )}
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div>
+          {/* Button to toggle camera */}
+          <button onClick={toggleCamera}>
+            {isCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
+          </button>
+          {/* Conditionally render the Webcam component */}
+          {isCameraOn && (
+            <Webcam
+              audio={false}
+              ref={webcamRef}
+              screenshotFormat="image/jpeg"
+              style={{ width: '20%', height: 'auto' }}
+            />
+          )}
+          {/* Button to capture image */}
+          {isCameraOn && (
+            <button onClick={capture}>Capture</button>
+          )}
+        </div>
+
+        {/* Display captured image and cropping tool */}
+        {imgSrc && (
+          <div>
+            <h3>Captured Image</h3>
+            {/* <img src={imgSrc} alt="Captured" style={{ maxWidth: '100%' }} /> */}
+            {/* <ReactCrop
+              src={imgSrc}
+              //crop={crop}
+              // onChange={(newCrop) => setCrop(newCrop)}
+              // onComplete={(newCrop) => {
+              //   setCompletedCrop(newCrop);
+              //   onCropComplete(newCrop);
+              // }}
+            /> */}
+      <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={onCropComplete}>
+              <img src={imgSrc} alt="Captured" />
+            </ReactCrop>
+            {/* Display cropped image preview */}
+            {croppedImageUrl && (
+              <div>
+                <h3>Cropped Image Preview</h3>
+                <img src={croppedImageUrl} alt="Cropped" style={{ maxWidth: '100%' }} />
+                {/* Button to upload cropped image */}
+                <button onClick={handleUpload}>Upload Cropped Image</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
