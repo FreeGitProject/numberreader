@@ -69,7 +69,7 @@ const CameraCapture = () => {
     if (croppedImage) {
       const formData = new FormData();
       formData.append('image', croppedImage, 'captured_image.jpg');
-      axios.post('http://localhost:5000/upload', formData)
+      axios.post(`${backend_url}/upload`, formData)
         .then(res => {
           console.log('Upload successful', res.data);
         })
