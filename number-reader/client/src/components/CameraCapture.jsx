@@ -9,6 +9,7 @@ import ReactCrop, {
 } from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css';
 import axios from 'axios';
+import backend_url from '../server'
 
 const CameraCapture = () => {
   const webcamRef = useRef(null);

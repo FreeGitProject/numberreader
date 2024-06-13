@@ -4,6 +4,7 @@ import { AgGridReact } from 'ag-grid-react'; // React Data Grid Component
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import CustomCellRender from './CustomCellRender';
+import { backend_url } from '../server';
 
 const ImagesList = () => {
   const [images, setImages] = useState([]);
@@ -26,7 +27,7 @@ const ImagesList = () => {
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/images');
+        const response = await axios.get(`${backend_url}/images`);
         const formattedImages = response.data.map(formatImageData);
         setImages(formattedImages);
       } catch (error) {
