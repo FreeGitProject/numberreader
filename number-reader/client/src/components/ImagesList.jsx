@@ -3,23 +3,32 @@ import axios from 'axios';
 import { AgGridReact } from 'ag-grid-react'; // React Data Grid Component
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
-//import CustomCellRender from './Grid/CustomCellRenderer'
+import CustomCellRender from './CustomCellRender';
 
 const ImagesList = () => {
   const [images, setImages] = useState([]);
- // Column Definitions: Defines the columns to be displayed.
- const columnDefs = [
-    { field: "imageNo", headerName: "imageNo"  },
-    { field: "previousExtractedNumber", headerName: "previousExtractedNumber" },
-    { field: "extractedNumber", headerName: "nextextractedNumber" },
-    { field: "differenceExtractedNumber", headerName: "differenceExtractedNumber" },
-    { field: "createdAt", headerName: "createdAt" },
+
+  const columnDefs = [
+    { field: "imageNo", headerName: "Image No" },
+    { field: "previousExtractedNumber", headerName: "Previous Extracted Number", cellRenderer: CustomCellRender },
+    { field: "extractedNumber", headerName: "Extracted Number", cellRenderer: CustomCellRender},
+    { field: "differenceExtractedNumber", headerName: "Difference Extracted Number", cellRenderer: CustomCellRender },
+    { field: "createdAt", headerName: "Created At", cellRenderer: CustomCellRender },
   ];
+
+  const formatImageData = (image) => ({
+    ...image,
+    previousExtractedNumber: image.previousExtractedNumber != null ? image.previousExtractedNumber : 0,
+    extractedNumber: image.extractedNumber != null ? image.extractedNumber : 0,
+    differenceExtractedNumber: image.differenceExtractedNumber != null ? image.differenceExtractedNumber : 0,
+  });
+
   useEffect(() => {
     const fetchImages = async () => {
       try {
         const response = await axios.get('http://localhost:5000/images');
-        setImages(response.data);
+        const formattedImages = response.data.map(formatImageData);
+        setImages(formattedImages);
       } catch (error) {
         console.error('Error fetching images:', error);
       }
@@ -31,19 +40,7 @@ const ImagesList = () => {
   return (
     <div className="ag-theme-alpine" style={{ height: '400px', width: '100%' }}>
       <AgGridReact
-        rowData={images.map(image => ({
-          ...image,
-          previousExtractedNumber: (image.previousExtractedNumber != null) ? `${image.previousExtractedNumber} km` : '0 km',
-          extractedNumber: `${image.extractedNumber} km`,
-          differenceExtractedNumber: (image.differenceExtractedNumber != null) ? `${image.differenceExtractedNumber} km` : '0 km',
-          createdAt: new Date(image.createdAt).toLocaleString('en-US', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-        }))}
+        rowData={images}
         domLayout='autoHeight'
         columnDefs={columnDefs}
         defaultColDef={{
