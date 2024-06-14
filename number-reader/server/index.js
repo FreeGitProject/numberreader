@@ -1,11 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const multer = require('multer');
 const Tesseract = require('tesseract.js');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
-const cors = require('cors'); // Import the cors package
+const cors = require('cors');
+const cloudinary = require('cloudinary').v2;
 
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
@@ -13,6 +13,14 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(cors()); // Enable CORS for all routes
+app.use(express.json());
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
@@ -34,21 +42,9 @@ const imageSchema = new mongoose.Schema({
 
 const Image = mongoose.model('Image', imageSchema);
 
-// Multer Storage Configuration
-const storage = multer.diskStorage({
-  destination: './uploads/',
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
-
-const upload = multer({ storage });
-
-app.use(express.json());
-
 // Image Upload and Processing Route
-app.post('/upload', upload.single('image'), async (req, res) => {
-  const { path: imagePath } = req.file;
+app.post('/upload', async (req, res) => {
+  const imageBuffer = Buffer.from(req.body.image, 'base64');
   const processedImagePath = `./uploads/processed-${Date.now()}.png`;
 
   try {
@@ -56,7 +52,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     const imageNo = count + 1;
     const previousImage = await Image.findOne({}, {}, { sort: { 'createdAt': -1 } });
 
-    sharp(imagePath)
+    sharp(imageBuffer)
       .grayscale()
       .normalize()
       .toFile(processedImagePath)
@@ -77,19 +73,22 @@ app.post('/upload', upload.single('image'), async (req, res) => {
               oldExtractedNumber = previousExtractedNumber;
             }
 
-            const newImage = new Image({
-              imageUrl: processedImagePath,
-              extractedNumber: extractedNumber.toString(),
-              imageNo,
-              differenceExtractedNumber,
-              previousExtractedNumber: oldExtractedNumber?.toString(),
-            });
+            cloudinary.uploader.upload(processedImagePath, { folder: "number_reader" })
+              .then(result => {
+                const newImage = new Image({
+                  imageUrl: result.secure_url,
+                  extractedNumber: extractedNumber.toString(),
+                  imageNo,
+                  differenceExtractedNumber,
+                  previousExtractedNumber: oldExtractedNumber?.toString(),
+                });
 
-            newImage.save()
-              .then(() => {
-                fs.unlinkSync(imagePath);
-                fs.unlinkSync(processedImagePath);
-                res.json({ extractedNumber, imageNo, differenceExtractedNumber, oldExtractedNumber });
+                newImage.save()
+                  .then(() => {
+                    fs.unlinkSync(processedImagePath);
+                    res.json({ extractedNumber, imageNo, differenceExtractedNumber, oldExtractedNumber });
+                  })
+                  .catch(err => res.status(500).json({ error: err.message }));
               })
               .catch(err => res.status(500).json({ error: err.message }));
           })

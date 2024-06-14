@@ -3,6 +3,7 @@ import axios from 'axios';
 import './App.css';
 import ImagesList from './components/ImagesList.jsx';
 import CameraCapture from './components/CameraCapture.jsx'; // Import the CameraCapture component
+import { backend_url } from './server.js';
 
 const App = () => {
   const [image, setImage] = useState(null);
@@ -13,16 +14,20 @@ const App = () => {
   };
 
   const handleUpload = () => {
-    const formData = new FormData();
-    formData.append('image', image);
-
-    axios.post('/upload', formData)
-      .then(res => {
-        setExtractedNumber(res.data.extractedNumber);
-      })
-      .catch(err => {
-        console.error(err);
-      });
+    if (image) {
+      const reader = new FileReader();
+      reader.readAsDataURL(image);
+      reader.onloadend = () => {
+        const base64data = reader.result.split(',')[1];
+        axios.post(`${backend_url}/upload`, { image: base64data })
+          .then(res => {
+            setExtractedNumber(res.data.extractedNumber);
+          })
+          .catch(err => {
+            console.error(err);
+          });
+      };
+    }
   };
 
   return (
