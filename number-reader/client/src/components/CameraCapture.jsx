@@ -1,12 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import ReactCrop, {
-  centerCrop,
-  makeAspectCrop,
-  Crop,
-  PixelCrop,
-  convertToPixelCrop,
-} from 'react-image-crop'
+import ReactCrop from 'react-image-crop'
 import 'react-image-crop/dist/ReactCrop.css';
 import axios from 'axios';
 import{ backend_url } from '../server'
@@ -67,15 +61,18 @@ const CameraCapture = () => {
 
   const handleUpload = () => {
     if (croppedImage) {
-      const formData = new FormData();
-      formData.append('image', croppedImage, 'captured_image.jpg');
-      axios.post(`${backend_url}/upload`, formData)
-        .then(res => {
-          console.log('Upload successful', res.data);
-        })
-        .catch(err => {
-          console.error(err);
-        });
+      const reader = new FileReader();
+      reader.readAsDataURL(croppedImage);
+      reader.onloadend = () => {
+        const base64data = reader.result.split(',')[1];
+        axios.post(`${backend_url}/upload`, { image: base64data })
+          .then(res => {
+            console.log('Upload successful', res.data);
+          })
+          .catch(err => {
+            console.error(err);
+          });
+      };
     }
   };
 
