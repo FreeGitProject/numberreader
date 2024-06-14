@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import ReactCrop from 'react-image-crop'
+import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import axios from 'axios';
-import{ backend_url } from '../server'
+import { backend_url } from '../server';
 
 const CameraCapture = () => {
   const webcamRef = useRef(null);
@@ -13,6 +13,7 @@ const CameraCapture = () => {
   const [croppedImage, setCroppedImage] = useState(null);
   const [croppedImageUrl, setCroppedImageUrl] = useState(null);
   const [isCameraOn, setIsCameraOn] = useState(false);
+  const [isFrontCamera, setIsFrontCamera] = useState(true);
 
   const capture = () => {
     const imageSrc = webcamRef.current.getScreenshot();
@@ -80,9 +81,17 @@ const CameraCapture = () => {
     setIsCameraOn(!isCameraOn);
   };
 
+  const switchCamera = () => {
+    setIsFrontCamera(!isFrontCamera);
+  };
+
   useEffect(() => {
     console.log('Crop state:', crop);
   }, [crop]);
+
+  const videoConstraints = {
+    facingMode: isFrontCamera ? 'user' : { exact: 'environment' }
+  };
 
   return (
     <div>
@@ -92,12 +101,17 @@ const CameraCapture = () => {
           <button onClick={toggleCamera}>
             {isCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
           </button>
+          {/* Button to switch camera */}
+          <button onClick={switchCamera}>
+            Switch to {isFrontCamera ? 'Back' : 'Front'} Camera
+          </button>
           {/* Conditionally render the Webcam component */}
           {isCameraOn && (
             <Webcam
               audio={false}
               ref={webcamRef}
               screenshotFormat="image/jpeg"
+              videoConstraints={videoConstraints}
               style={{ width: '20%', height: 'auto' }}
             />
           )}
@@ -111,17 +125,7 @@ const CameraCapture = () => {
         {imgSrc && (
           <div>
             <h3>Captured Image</h3>
-            {/* <img src={imgSrc} alt="Captured" style={{ maxWidth: '100%' }} /> */}
-            {/* <ReactCrop
-              src={imgSrc}
-              //crop={crop}
-              // onChange={(newCrop) => setCrop(newCrop)}
-              // onComplete={(newCrop) => {
-              //   setCompletedCrop(newCrop);
-              //   onCropComplete(newCrop);
-              // }}
-            /> */}
-      <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={onCropComplete}>
+            <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={onCropComplete}>
               <img src={imgSrc} alt="Captured" />
             </ReactCrop>
             {/* Display cropped image preview */}
